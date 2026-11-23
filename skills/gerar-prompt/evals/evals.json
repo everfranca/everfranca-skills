@@ -1,0 +1,59 @@
+{
+  "skill_name": "gerar-prompt",
+  "avaliacao": "Rodar cada caso duas vezes em paralelo via subagents: with-skill (skill carregada) e baseline (sem skill, mesmo prompt). Assertions objetivas verificadas no artefato; qualidade do prompt avaliada qualitativamente pelo usuário.",
+  "evals": [
+    {
+      "id": 1,
+      "name": "input-vago-ui",
+      "prompt": "aplicar tema dark",
+      "expected_output": "Fluxo completo: pergunta de harness (default sessão), discovery do repositório, entrevista de clarificação sobre escopo do tema, playback, prompt salvo em prompts/aplicar-tema-dark.md com as 9 seções, metadados completos, validador exit 0",
+      "files": [],
+      "assertions": [
+        "O harness alvo foi confirmado por pergunta antes da geração",
+        "A família de modelo não foi perguntada (inferida e registrada no metadado)",
+        "Houve perguntas de clarificação antes de gerar o artefato",
+        "O arquivo foi salvo em prompts/aplicar-tema-dark.md (kebab-case)",
+        "Os metadados contêm gerado_em, familia_modelo, harness_alvo, input_original e versao",
+        "As 9 seções do template estão presentes no artefato",
+        "A Tarefa usa verbo de ação no imperativo",
+        "Os Critérios de Aceite são mensuráveis e testáveis",
+        "As Referências citam apenas arquivos existentes no repositório",
+        "O artefato não contém emojis",
+        "node scripts/validar-prompt.mjs prompts/aplicar-tema-dark.md retorna exit 0"
+      ]
+    },
+    {
+      "id": 2,
+      "name": "input-vago-backend",
+      "prompt": "implementar validação token JWT na api",
+      "expected_output": "Mesmo fluxo do caso 1; entrevista deve investigar regras de negócio (onde validar, rotas protegidas, tratamento de token expirado/inválido) em vez de decisões técnicas respondíveis pelo repositório",
+      "files": [],
+      "assertions": [
+        "As perguntas da entrevista tratam de regras de negócio e critérios, não de escolha de biblioteca ou framework",
+        "O prompt gerado contém tratamento de unhappy path (token expirado, token inválido, ausência de token)",
+        "O arquivo foi salvo em prompts/implementar-validacao-token-jwt-na-api.md",
+        "Os metadados estão completos e com valores válidos",
+        "As 9 seções estão presentes",
+        "Zero termos vagos não quantificados no corpo",
+        "As referências apontam para arquivos reais do repositório alvo",
+        "node scripts/validar-prompt.mjs retorna exit 0"
+      ]
+    },
+    {
+      "id": 3,
+      "name": "modo-iteracao",
+      "prompt": "refinar o prompt que está em prompts/migrar-dados.md para incluir rollback em caso de falha",
+      "setup": "Criar previamente prompts/migrar-dados.md (artefato válido, versao 1) para o agente refinar",
+      "expected_output": "Diagnóstico do arquivo existente contra o quality gate, pergunta sobre o que muda, versao incrementada para 2, nova seção/instruções de rollback, revalidação com exit 0",
+      "files": ["prompts/migrar-dados.md"],
+      "assertions": [
+        "O arquivo existente foi lido antes de qualquer alteração",
+        "O metadado versao foi incrementado (2)",
+        "O metadado input_original preserva o pedido original ou acumula histórico de forma rastreável",
+        "As instruções de rollback foram incorporadas com comportamento verificável (não vago)",
+        "As 9 seções continuam presentes",
+        "node scripts/validar-prompt.mjs prompts/migrar-dados.md retorna exit 0"
+      ]
+    }
+  ]
+}
