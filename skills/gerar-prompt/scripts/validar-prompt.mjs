@@ -16,7 +16,7 @@
 //   6. Referências vivas: caminhos de arquivo citados existem no diretório atual
 
 import { readFileSync, existsSync } from "node:fs";
-import { resolve } from "node:path";
+import { resolve, sep } from "node:path";
 
 const SECTIONS = [
   "## Papel",
@@ -143,9 +143,22 @@ for (const section of missing) {
   violations.push(`[SEÇÃO] ausente: ${section} (ou equivalente em tag XML)`);
 }
 
-// Bloco <critical> obrigatorio: regras bloqueantes destacadas apos a Tarefa.
+// Bloco <critical> obrigatorio: regras bloqueantes destacadas, e deve ser o
+// ULTIMO elemento do artefato (apos a ultima secao, antes apenas de espaco em branco).
 if (!/<critical>[\s\S]*?\S[\s\S]*?<\/critical>/.test(bodyText)) {
-  violations.push("[SEÇÃO] ausente: bloco <critical>...</critical> com 3 a 5 regras bloqueantes (apos a Tarefa)");
+  violations.push("[SEÇÃO] ausente: bloco <critical>...</critical> com 3 a 5 regras bloqueantes (no final do artefato)");
+} else {
+  const lastSectionIdx = bodyLines.reduce((last, line, index) => {
+    const isHeader = SECTIONS.some((section) => line.trim() === section) ||
+      xmlSections.some((tag) => line.trim().startsWith(`<${tag}>`));
+    return isHeader ? index : last;
+  }, -1);
+  const criticalCloseIdx = bodyLines.reduce((last, line, index) =>
+    line.trim() === "</critical>" ? index : last, -1);
+  const trailing = bodyLines.slice(criticalCloseIdx + 1).some((line) => line.trim() !== "");
+  if (lastSectionIdx >= criticalCloseIdx || trailing) {
+    violations.push("[SEÇÃO] bloco <critical> deve ser o ÚLTIMO elemento do artefato: reposicione após a seção Auto-verificação, sem conteúdo depois dele");
+  }
 }
 
 // --- 3. Placeholders residuais (corpo) ---
@@ -184,9 +197,11 @@ lines.forEach((line, index) => {
 // Duas isenções deliberadas:
 //   a) Padrões glob (*.test.ts): o asterisco e o token seguinte são removidos antes
 //      do casamento, para não tratar fragmento de glob como caminho.
-//   b) Arquivos futuros: caminho anotado com "(a criar)" ou "[a criar]" na mesma
-//      linha é deliverable, não referência de contexto — isento da checagem de
-//      existência, mas contabilizado para transparência.
+//   b) Arquivos futuros: caminho anotado com "(a criar)" ou "[a criar]" é isento da
+//      checagem de existência, contado para transparência, SOMENTE quando a linha
+//      contém exatamente um caminho. Linhas com múltiplos caminhos não são isentas:
+//      a anotação é ambígua quanto a qual caminho é deliverable, e um typo em caminho
+//      real passaria sem verificação (falso negativo).
 
 const FUTURE_REF_REGEX = /[([]\s*a criar\s*[)\]]/i;
 
@@ -198,11 +213,17 @@ let futureRefs = 0;
 for (const candidate of candidates) {
   const lineNo = bodyLines.findIndex((line) => line.replace(/\*[^*\s]*/g, " ").includes(candidate));
   const lineContent = lineNo >= 0 ? bodyLines[lineNo] : "";
-  if (FUTURE_REF_REGEX.test(lineContent)) {
+  const pathsInLine = [...new Set((lineContent.replace(/\*[^*\s]*/g, " ").match(PATH_REGEX) || []))];
+  if (FUTURE_REF_REGEX.test(lineContent) && pathsInLine.length === 1) {
     futureRefs++;
     continue;
   }
   const absolute = resolve(process.cwd(), candidate);
+  const root = resolve(process.cwd());
+  if (!absolute.startsWith(root + sep)) {
+    violations.push(`[REFERÊNCIA] linha ${lineNo + bodyStart + 1}: caminho fora do projeto não permitido: ${candidate}`);
+    continue;
+  }
   checkedRefs++;
   if (!existsSync(absolute)) {
     violations.push(`[REFERÊNCIA] linha ${lineNo + bodyStart + 1}: caminho citado não existe: ${candidate}`);

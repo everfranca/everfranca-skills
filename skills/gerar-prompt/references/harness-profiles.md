@@ -5,6 +5,7 @@
 - O conhecimento aqui é fato verificável: arquivo existe ou não existe. Errar quebra o prompt (referência morta é violação ALTA).
 - Cite arquivo de contexto do harness (CLAUDE.md, AGENTS.md, .cursor/rules) apenas se ele existir no repositório alvo, verificado no Discovery.
 - Sintaxe específica (`@caminho`) somente quando o alvo foi confirmado pelo usuário; na dúvida, caminho relativo puro, que funciona em qualquer harness.
+- A gravação de arquivos pela skill é exclusivamente dentro do diretório da aplicação (raiz do projeto alvo), em caminho relativo, INDEPENDENTE do harness. Nenhuma convenção ou ferramenta específica de harness relaxa essa regra.
 
 </critical>
 

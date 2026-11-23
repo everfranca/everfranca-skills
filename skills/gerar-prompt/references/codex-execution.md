@@ -1,6 +1,6 @@
 # Execução da skill no Codex
 
-Carregue esta referência somente quando a sessão que executa a skill for Codex. Ela não configura o cliente, não habilita ferramentas e não altera permissões ou modo da sessão. Em conflito, prevalecem as instruções da sessão e o contrato da ferramenta disponível.
+Carregue esta referência somente quando a sessão que executa a skill for Codex. Ela não configura o cliente, não habilita ferramentas e não altera permissões ou modo da sessão. Em conflito, prevalecem as instruções da sessão e o contrato da ferramenta disponível. Exceção: a regra de gravação exclusiva dentro do diretório da aplicação (raiz do projeto alvo, caminho relativo), declarada no bloco `<critical>` do SKILL.md, independerá de harness e NUNCA é relaxada por esta referência.
 
 ## 1. Fronteira de aplicação
 

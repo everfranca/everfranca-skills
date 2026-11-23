@@ -1,9 +1,9 @@
 {
-  "SKILL.md": "958010cf5b1eadc9e0dc2f4535676f5c36cd960d5d31fa682a9070f597c662ba",
-  "assets/template-base.md": "a6f0e9cf77f17092171c1a7f259143237b70680d31d1990e5ea00f548dc44e8a",
+  "SKILL.md": "cf2b57012b0144cdef6dbd7f6889ede7c62e53bb85a14f94899fea949e849f68",
+  "assets/template-base.md": "7bd031f347e2894efb251d4ce54a699981cefa211b7cd7e17292a9f14e97ab9f",
   "evals/evals.json": "76bb1a6bec99ae08f5076a8d7736034eb414a44298daa7e4dc403d1c71262f55",
-  "references/harness-profiles.md": "616f08d8d17a13885e6ba0ec3670e9bbd0337bc45fe01402ffc3c5f32b8d18d8",
+  "references/harness-profiles.md": "fdbeeebb4a1116bc43e468555baa652bb9f78dcff4bbf1572b009695d147cad2",
   "references/model-profiles.md": "b4b68e4d9dd7e010e8aa6c7f53b829cecfa9b0ac80f39d0c51adae8630632a74",
   "references/quality-gate.md": "11a57772597bf4e490595d846abada633d30e3badd9bf6133d1be1eb9e66f67f",
-  "scripts/validar-prompt.mjs": "452c17b576c62c8b58103f8d627cd54dc1bae2d451e949ab9c8a489e3c760623"
+  "scripts/validar-prompt.mjs": "be2dc33af2772458332666a7b6bd4987bec8e403929465afbfe32809723753e6"
 }

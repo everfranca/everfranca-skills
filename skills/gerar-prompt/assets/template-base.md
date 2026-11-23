@@ -50,17 +50,6 @@ versao: {{VERSAO}}
      Nunca sugestao ("poderia", "que tal"). -->
 {{TAREFA}}
 
-<critical>
-
-<!-- Distile AQUI 3 a 5 regras verdadeiramente bloqueantes, uma linha cada,
-     extraidas das secoes Restricoes e Criterios de Aceite (nao invente regras novas):
-     fronteiras de escopo, o que nao pode ser alterado, verificacao obrigatoria.
-     Instrucoes criticas destacadas ganham aderencia do agente executor
-     (pratica recomendada pela documentacao da Anthropic). -->
-{{CRITICOS}}
-
-</critical>
-
 ## Instruções
 
 <!-- Passos numerados quando a ordem importa; bullets quando nao importa.
@@ -98,3 +87,15 @@ versao: {{VERSAO}}
      Ex: rodar os testes existentes, revisar os criterios de aceite um a um,
      confirmar que nenhum arquivo fora do escopo foi alterado. -->
 {{AUTO_VERIFICACAO}}
+
+<critical>
+
+<!-- OBRIGATORIAMENTE o ULTIMO elemento do artefato (o validador confere).
+     Distile AQUI 3 a 5 regras verdadeiramente bloqueantes, uma linha cada,
+     extraidas das secoes Restricoes e Criterios de Aceite (nao invente regras novas):
+     fronteiras de escopo, o que nao pode ser alterado, verificacao obrigatoria.
+     Instrucoes criticas como ultima impressao ganham aderencia do agente executor
+     (pratica recomendada pela documentacao da Anthropic). -->
+{{CRITICOS}}
+
+</critical>

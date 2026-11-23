@@ -12,7 +12,7 @@ const baseline = JSON.parse(readFileSync(join(skillRoot, 'evals/codex-baseline.j
 const sha256 = (data) => createHash('sha256').update(data).digest('hex');
 
 for (const [file, expected] of Object.entries(baseline)) {
-  test(`preserva o contrato v1.3.1: ${file}`, () => {
+  test(`preserva o contrato v0.0.1: ${file}`, () => {
     let content = readFileSync(join(skillRoot, file));
     if (file === 'SKILL.md') {
       let text = content.toString('utf8');
@@ -21,7 +21,7 @@ for (const [file, expected] of Object.entries(baseline)) {
       assert.ok(text.indexOf(blocks[0]) < text.indexOf('<critical>'), 'roteamento deve preceder o fluxo legado');
       assert.match(blocks[0], /Somente quando o harness que está executando esta skill for Codex/);
       assert.match(blocks[0], /outro harness, ou a origem for indeterminada, não carregue nem aplique/);
-      text = text.replace(blocks[0], '').replace('  version: 1.3.2\n', '  version: 1.3.1\n');
+      text = text.replace(blocks[0], '').replace('  version: 0.0.3\n', '  version: 0.0.1\n');
       content = Buffer.from(text);
     }
     assert.equal(sha256(content), expected, `${file}: houve alteração fora da extensão isolada`);
@@ -33,7 +33,7 @@ function artifact(harness, family) {
     ['Papel', 'Atue como especialista em documentação.'],
     ['Contexto', 'O projeto precisa registrar o comando de consulta.'],
     ['Referências', '`README.md` descreve o projeto.'],
-    ['Tarefa', 'Documente o comando de consulta.\n\n<critical>\n- Preserve o código.\n- Registre o comando.\n- Verifique a documentação.\n</critical>'],
+    ['Tarefa', 'Documente o comando de consulta.'],
     ['Instruções', 'Leia o README e documente o comando existente.'],
     ['Restrições', 'Altere somente a documentação e preserve o código.'],
     ['Critérios de Aceite', 'O README contém o comando de consulta e o código permanece intacto.'],
@@ -41,10 +41,11 @@ function artifact(harness, family) {
     ['Auto-verificação', 'Verifique o comando documentado e a preservação do código.'],
   ];
   const xmlNames = ['papel', 'contexto', 'referências', 'tarefa', 'instruções', 'restrições', 'criterios-de-aceite', 'formato-de-saida', 'auto-verificacao'];
+  const critical = '\n\n<critical>\n- Preserve o código.\n- Registre o comando.\n- Verifique a documentação.\n</critical>\n';
   const body = sections.map(([name, value], index) => family === 'anthropic'
     ? `<${xmlNames[index]}>\n${value}\n</${xmlNames[index]}>`
     : `## ${name}\n\n${value}`).join('\n\n');
-  return `---\ngerado_em: 2026-11-20\nfamilia_modelo: ${family}\nharness_alvo: ${harness}\ninput_original: "Documentar comando"\nversao: 1\n---\n\n# Documentar comando\n\n${body}\n`;
+  return `---\ngerado_em: 2026-11-20\nfamilia_modelo: ${family}\nharness_alvo: ${harness}\ninput_original: "Documentar comando"\nversao: 1\n---\n\n# Documentar comando\n\n${body}${critical}`;
 }
 
 async function validate(markdown) {
@@ -121,6 +122,14 @@ test('controle negativo: continua exigindo critical no formato Codex', async () 
   const result = await validate(artifact('codex', 'openai').replace(/<critical>[\s\S]*?<\/critical>/, ''));
   assert.equal(result.status, 1, result.stdout + result.stderr);
   assert.match(result.stdout, /\[SEÇÃO\] ausente: bloco <critical>/);
+});
+
+test('controle negativo: critical fora do final do artefato é rejeitado', async () => {
+  const moved = artifact('opencode', 'generico').replace(/\n\n<critical>[\s\S]*?<\/critical>\n$/, '\n');
+  const withEarlyCritical = moved.replace('## Instruções', '<critical>\n- Preserve o código.\n- Registre o comando.\n- Verifique a documentação.\n</critical>\n\n## Instruções');
+  const result = await validate(withEarlyCritical);
+  assert.equal(result.status, 1, result.stdout + result.stderr);
+  assert.match(result.stdout, /\[SEÇÃO\] bloco <critical> deve ser o ÚLTIMO elemento/);
 });
 
 test('referências locais adicionadas são resolvíveis', () => {

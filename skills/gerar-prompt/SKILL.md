@@ -2,7 +2,7 @@
 name: gerar-prompt
 description: 'Gera prompts estruturados de alta qualidade em português brasileiro a partir de inputs curtos e vagos (ex: "aplicar tema dark", "implementar validação JWT na api"), com research do repositório, entrevista de clarificação, template universal adaptado ao harness alvo (Claude Code, Codex, OpenCode, Cursor, Kiro, Antigravity, Devin) e validação determinística. Use esta skill SEMPRE que o usuário pedir "/gerar-prompt", "criar/montar/gerar um prompt", "melhorar ou refinar um prompt", "transformar este pedido em prompt estruturado", mencionar engenharia de prompt ou engenharia de contexto aplicada a uma tarefa, ou descrever uma implementação que precisa virar um prompt bem construído antes de ser passado a outro agente ou modelo.'
 metadata:
-  version: 0.0.2
+  version: 0.0.3
 ---
 
 # Skill: gerar-prompt
@@ -23,6 +23,7 @@ O harness de execução é o ambiente desta sessão, não o `harness_alvo` do pr
 - TODA pergunta ao usuário (alvos, entrevista, playback, entrega) usa o mecanismo da Regra de Interatividade: ferramenta nativa de pergunta OBRIGATÓRIA quando existir (question/AskUserQuestion); sem ferramenta, pergunta numerada que encerra o turno e aguarda a resposta — nunca escreva perguntas e continue na mesma mensagem (ver Seção 3).
 - NÃO utilize emojis em nenhum artefato desta skill (template, referências, metadados ou prompt gerado). O validador rejeita o artefato se encontrar.
 - NUNCA entregue o prompt final sem executar o validador determinístico e obter exit 0.
+- TODO arquivo gravado pela skill (prompt gerado, registro de auditoria, qualquer artefato) fica EXCLUSIVAMENTE dentro do diretório da aplicação (raiz do projeto alvo), em caminho relativo. Proibido gravar em caminho absoluto, fora da raiz do projeto ou em diretórios do sistema. Esta regra INDEPENDE DO HARNESS: vale em todos os harnesses (Claude Code, Codex, OpenCode, Cursor, Kiro, Antigravity, Devin, genérico) e nenhuma adaptação de harness (Seção 5, `references/harness-profiles.md`, `references/codex-execution.md`) pode relaxá-la ou substituí-la.
 
 </critical>
 
@@ -83,10 +84,10 @@ Localizado o diretório, use-o como base para todos os templates e scripts. Sem 
 As perguntas desta skill são conversação real com o usuário, não texto exibido. Resolva o mecanismo UMA vez, no início da execução, e use o mesmo em todas as perguntas:
 
 1. **Ferramenta nativa de pergunta é OBRIGATÓRIA quando existe no seu conjunto de ferramentas — nunca a substitua por texto na mensagem.** Nomes conhecidos: `question` no OpenCode, `AskUserQuestion` no Claude Code. Apresente as opções clicáveis com o default pré-marcado; o harness pausa a execução até a resposta chegar. Em caso de dúvida sobre a existência da ferramenta, procure-a no toolset antes de decidir pelo texto.
-2. **Fallback SOMENTE quando o toolset não tiver nenhuma ferramenta de pergunta** (ex.: Codex CLI/IDE/Cloud, terminais simples): escreva as perguntas numeradas como ÚLTIMO conteúdo da sua mensagem e ENCERRE A EXECUÇÃO COMPLETAMENTE — nenhuma ferramenta depois de perguntar, nenhum artefato, nenhuma auto-resposta. A resposta do usuário no chat é o único gatilho da continuação. Regra da primeira mensagem: ao receber o input inicial, sua primeira resposta contém APENAS a pergunta de harness alvo (Passo 2); discovery e entrevistas vêm depois, em turnos próprios.
+2. **Fallback quando o toolset não tiver nenhuma ferramenta de pergunta OU a chamada falhar por indisponibilidade confirmada** (ex.: Codex CLI/IDE/Cloud, terminais simples; erro ou bloqueio de modo na chamada da ferramenta): diferencie indisponibilidade de argumentos inválidos — corrija argumentos inválidos e repita a chamada; diante de indisponibilidade, escreva as perguntas numeradas como ÚLTIMO conteúdo da sua mensagem e ENCERRE A EXECUÇÃO COMPLETAMENTE — nenhuma ferramenta depois de perguntar, nenhum artefato, nenhuma auto-resposta. Falha da ferramenta não é resposta: nunca avance com o default sem confirmação do usuário. A resposta do usuário no chat é o único gatilho da continuação. Regra da primeira mensagem: ao receber o input inicial, sua primeira resposta contém APENAS a pergunta de harness alvo (Passo 2); discovery e entrevistas vêm depois, em turnos próprios.
 3. **Proibido em qualquer caso**: escrever perguntas e continuar o fluxo na mesma execução; responder pelas hipóteses do modelo quando há um usuário real presente; misturar múltiplas rodadas de perguntas numa única mensagem.
 
-Exceção única: contexto declaradamente headless/simulado (ex.: execução automatizada de avaliação, informada por quem invocou). Nesse caso, simule as respostas de um usuário sênior do projeto e registre-as em arquivo para auditoria.
+Exceção única: contexto declaradamente headless/simulado (ex.: execução automatizada de avaliação, informada por quem invocou). Nesse caso, NÃO grave nada em disco por padrão: simule as respostas de um usuário sênior do projeto mantendo o registro apenas na conversa. Gravar registro em disco exige autorização explícita de quem invocou e, quando autorizado, siga obrigatoriamente: arquivo em `./prompts/_auditoria/[nome].log` dentro do diretório da aplicação (raiz do projeto alvo, caminho relativo), caminho informado na entrega, nunca fora da raiz do projeto e caráter efêmero (remover após a avaliação).
 
 Você NÃO deve gerar o arquivo final na primeira interação. Siga este fluxo linear:
 
@@ -203,7 +204,7 @@ Ajustes de harness: apenas a seção Referências e as assunções de ambiente m
 
 ### 6.1 Normalização
 
-Nome do arquivo em kebab-case derivado da tarefa. Caminho padrão: `./prompts/[nome].md` (crie o diretório se não existir), salvo indicação diferente do usuário.
+Nome do arquivo em kebab-case derivado da tarefa. Caminho padrão: `./prompts/[nome].md` (crie o diretório se não existir), salvo indicação diferente do usuário. A gravação é EXCLUSIVAMENTE dentro do diretório da aplicação (raiz do projeto alvo), em caminho relativo: mesmo com indicação do usuário, recuse caminhos absolutos ou fora da raiz e ofereça alternativa dentro do projeto.
 
 ### 6.2 Metadados (cabeçalho obrigatório)
 
@@ -220,7 +221,14 @@ versao: 1
 ---
 ```
 
-Campos: `familia_modelo` (inferida, Seção 3 Passo 2), `harness_alvo` (confirmado), `input_original` (o pedido verbatim do usuário), `versao` (1 na criação; incremento no modo iteração).
+Campos: `familia_modelo` (inferida, Seção 3 Passo 2), `harness_alvo` (confirmado), `input_original` (o pedido do usuário sanitizado antes de gravar em disco; ver 6.2.1), `versao` (1 na criação; incremento no modo iteração).
+
+### 6.2.1 Sanitização e consentimento do input_original (bloqueante)
+
+Antes de salvar o artefato em disco:
+
+1. Sanitize o `input_original`: mascare qualquer segredo ou dado sensível — tokens, chaves de API, senhas, JWTs, IPs internos, strings de conexão e documentos pessoais (CPF, CNPJ, RG, número de passaporte, dados de cartão e bancários) — substituindo-os por placeholders como `<REDACTED>`. O texto integral permanece apenas na conversa.
+2. Pergunte ao usuário, pelo mecanismo da Regra de Interatividade, se ele deseja salvar o pedido original em disco, alertando que o arquivo pode conter dados sensíveis e pode ser versionado/commitado acidentalmente. Se o usuário recusar, grave `input_original` como `"(input omitido a pedido do usuário)"` e preserve o texto integral somente na sessão.
 
 ### 6.3 Preenchimento
 
@@ -230,10 +238,10 @@ Leia `assets/template-base.md` (ou o template de projeto, se prevalente) e preen
 - Contexto: o porquê da tarefa + findings relevantes do Discovery (stack, convenções). Explique a motivação: modelos generalizam melhor quando entendem o objetivo.
 - Referências: caminhos just-in-time descobertos no Discovery. Nada de colar conteúdo de arquivos.
 - Tarefa: objetivo único e claro, verbo de ação no imperativo.
-- Bloco critical: imediatamente após a Tarefa, distile 3 a 5 regras bloqueantes em `<critical>...</critical>` (fronteiras de escopo, o que não pode ser alterado, verificação obrigatória), uma linha cada, extraídas de Restrições e Critérios — não invente regras que não estejam nas seções completas. Instruções críticas destacadas ganham aderência do agente executor (prática recomendada pela documentação da Anthropic).
+- Bloco critical: ao FINAL do artefato, obrigatoriamente depois da seção Auto-verificação (último elemento do prompt), distile 3 a 5 regras bloqueantes em `<critical>...</critical>` (fronteiras de escopo, o que não pode ser alterado, verificação obrigatória), uma linha cada, extraídas de Restrições e Critérios — não invente regras que não estejam nas seções completas. Instruções críticas destacadas na fechamento do prompt ganham aderência do agente executor (prática recomendada pela documentação da Anthropic) e ficam como última impressão antes da execução.
 - Instruções: passos numerados quando a ordem importa; quando não importa, bullet points.
 - Restrições: ditas positivamente ("escreva em português", não "não escreva em inglês"). Cada restrição deve existir por um motivo: remova as que não mudam o comportamento.
-- Critérios de Aceite: mensuráveis e testáveis, um por linha, each verificável de forma independente.
+- Critérios de Aceite: mensuráveis e testáveis, um por linha, cada um verificável de forma independente.
 - Formato de Saída: o deliverable explícito (arquivos criados/alterados, como reportar). Arquivos que a tarefa criará vêm anotados com "(a criar)" na mesma linha — o validador isenta essa anotação da checagem de existência.
 - Auto-verificação: o que o agente executor deve conferir antes de declarar conclusão.
 - Idioma: português brasileiro em todo o artefato.
@@ -255,7 +263,7 @@ Após salvar o prompt, execute o validador da skill, sempre via `node`:
 node <diretorio-da-skill>/scripts/validar-prompt.mjs prompts/[nome].md
 ```
 
-O validador confere deterministicamente: metadados completos e válidos (enums incluídos), presença das 9 seções, zero placeholders residuais, zero termos vagos, zero emojis e referências apontando para arquivos existentes.
+O validador confere deterministicamente: metadados completos e válidos (enums incluídos), presença das 9 seções, zero placeholders residuais, zero termos vagos, zero emojis, referências apontando para arquivos existentes e bloco `<critical>` como último elemento do artefato.
 
 - Exit 0 (OK): artefato conforme; prossiga para a entrega.
 - Exit 1: corrija CADA violação listada (com número de linha) e reexecute. Repita o loop validar -> corrigir -> revalidar até exit 0.
@@ -272,7 +280,7 @@ Após exit 0, pergunte ao usuário pelo mecanismo da Regra de Interatividade (Se
 ```
 
 - Arquivo: informe o caminho absoluto.
-- Clipboard: use `xclip -selection clipboard` ou `wl-copy` (verifique disponibilidade com `command -v`). Se nenhum existir, informe e ofereça o terminal como fallback.
+- Clipboard: use `xclip -selection clipboard` ou `wl-copy` (verifique disponibilidade com `command -v`). Avise que o conteúdo permanece no clipboard compartilhado do sistema, legível por outras aplicações. Se nenhum existir, informe e ofereça o terminal como fallback.
 - Terminal: exiba o prompt completo em bloco de código para cópia manual.
 
 ## 10. Modo Iteração (refinar prompt existente)
