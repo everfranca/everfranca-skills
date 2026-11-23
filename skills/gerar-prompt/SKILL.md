@@ -1,8 +1,8 @@
 ---
 name: gerar-prompt
-description: Gera prompts estruturados de alta qualidade em português brasileiro a partir de inputs curtos e vagos (ex: "aplicar tema dark", "implementar validação JWT na api"), com research do repositório, entrevista de clarificação, template universal adaptado ao harness alvo (Claude Code, Codex, OpenCode, Cursor, Kiro, Antigravity, Devin) e validação determinística. Use esta skill SEMPRE que o usuário pedir "/gerar-prompt", "criar/montar/gerar um prompt", "melhorar ou refinar um prompt", "transformar este pedido em prompt estruturado", mencionar engenharia de prompt ou engenharia de contexto aplicada a uma tarefa, ou descrever uma implementação que precisa virar um prompt bem construído antes de ser passado a outro agente ou modelo.
+description: 'Gera prompts estruturados de alta qualidade em português brasileiro a partir de inputs curtos e vagos (ex: "aplicar tema dark", "implementar validação JWT na api"), com research do repositório, entrevista de clarificação, template universal adaptado ao harness alvo (Claude Code, Codex, OpenCode, Cursor, Kiro, Antigravity, Devin) e validação determinística. Use esta skill SEMPRE que o usuário pedir "/gerar-prompt", "criar/montar/gerar um prompt", "melhorar ou refinar um prompt", "transformar este pedido em prompt estruturado", mencionar engenharia de prompt ou engenharia de contexto aplicada a uma tarefa, ou descrever uma implementação que precisa virar um prompt bem construído antes de ser passado a outro agente ou modelo.'
 metadata:
-  version: 0.0.1
+  version: 0.0.2
 ---
 
 # Skill: gerar-prompt
